@@ -1,3 +1,4 @@
+# helper.py
 import json
 
 
@@ -10,9 +11,9 @@ class StringUtils:
         return cleaned_string
 
     @staticmethod
-    def convert_to_json(translations_list):
+    def convert_to_json(translation_dict):
         translations_dict = {
-            lang: translation for lang, translation in translations_list
+            lang: translation for lang, translation in translation_dict.items()
         }
         translations_json = json.dumps(translations_dict, ensure_ascii=False, indent=4)
         return translations_json

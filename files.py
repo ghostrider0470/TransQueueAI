@@ -1,3 +1,4 @@
+# files.py
 import glob
 import json
 import os
@@ -30,6 +31,9 @@ def load_po_files(input_directory):
             files = glob.glob(os.path.join(path, "*.po"))
 
             for file_path in files:
+                if 'template' in os.path.basename(file_path):
+                    continue  # Skip template files
+
                 po_file = polib.pofile(file_path)
                 lang = po_file.metadata.get("Language", "unknown")
 
@@ -41,7 +45,14 @@ def load_po_files(input_directory):
     return translations
 
 
-def create_po_file(translations_by_key, lang, output_directory, template_path=None):
+
+
+
+def create_po_file(translations_by_key, lang,input_directory, output_directory, current_sub_directory):
+    # Find the template file in the current_sub_directory
+    template_files = glob.glob(os.path.join(input_directory, current_sub_directory, "template*.po"))
+    template_path = template_files[0] if template_files else None
+
     if template_path:
         po = polib.pofile(template_path)
     else:
@@ -50,13 +61,11 @@ def create_po_file(translations_by_key, lang, output_directory, template_path=No
     po.metadata = {"Language": lang}
 
     for key, translations in translations_by_key.items():
-        translation_for_lang = next(
-            (translation for language, translation in translations if language == lang),
-            "",
-        )
+        translation_for_lang = translations.get(lang, "")
         entry = polib.POEntry(msgid=key, msgstr=translation_for_lang)
         po.append(entry)
 
-    output_file = os.path.join(output_directory, f"{lang}.po")
-    po.save(output_file)
-    print(f"{output_file} saved successfully.")
+    output_file_path = os.path.join(output_directory, current_sub_directory, f"{lang}.po")
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    po.save(output_file_path)
+    print(f"{output_file_path} saved successfully.")

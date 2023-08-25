@@ -1,3 +1,4 @@
+# translations.py
 import os
 
 import openai
@@ -6,11 +7,14 @@ import json
 
 class Translations:
     def __init__(self):
-        self.length = len(self)
-        self.translations = {"msgId": {"languages": {"en": "", "se": ""}}}
+        self.translations = {}
+        self.length = len(self.translations)  # Now it's safe to call
 
     def __len__(self):
         return len(self.translations)
+
+    def items(self):
+        return self.translations.items()
 
     def to_json(self):
         entries = [
@@ -65,8 +69,6 @@ def request_translation(context):
     )
     content = response["choices"][0]["message"]["content"].strip()
     translation_json = json.loads(content)  # Parse the JSON response
-    bosnian_translation = translation_json.get(
-        "bs", ""
-    )  # Extract the Bosnian translation
+    bosnian_translation = translation_json.get("bs", "")  # Extract the Bosnian translation
 
     return bosnian_translation

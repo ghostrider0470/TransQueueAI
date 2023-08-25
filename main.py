@@ -1,3 +1,4 @@
+# main.py
 import os
 
 from tqdm import tqdm
@@ -43,4 +44,9 @@ if __name__ == "__main__":
 
     # Creating .po file for Bosnian translations
     output_directory = os.path.join(config.app_root_directory, "output")
-    create_po_file(translations_by_key, "bs", output_directory)
+    for root, dirs, _ in os.walk(config.input_directory):
+        for directory in dirs:
+
+            create_po_file(translations_by_key, "bs", config.input_directory, output_directory, directory)
+
+
