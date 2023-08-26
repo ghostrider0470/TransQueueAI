@@ -3,7 +3,7 @@ import os
 
 from tqdm import tqdm
 
-import translations
+import entries
 from config import Config
 from files import load_progress, load_po_files, save_progress, create_po_file
 from helper import StringUtils
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     if translations_by_key is None:
         translations_by_key = load_po_files(config.input_directory)
 
-    items = list(translations_by_key.entries())
+    items = list(translations_by_key.get_entries())
 
     with tqdm(total=len(translations_by_key), desc="Translating", ascii=True) as pbar:
         # Set the progress bar to the starting index
@@ -29,14 +29,16 @@ if __name__ == "__main__":
             items[start_index:], start=start_index
         ):
             minified_msgId = StringUtils.remove_empty_lines(msgId)
+
             translations_string = StringUtils.convert_to_json(translation_dict)
 
-            context = translations.create_context(translations_string)
-            response = translations.request_translation(context)
+            context = entries.create_context(translations_string)
+            response = entries.request_translation(context)
 
             # Extracting Bosnian translation and updating translations_by_key
             bosnian_translation = response
             translations_by_key.add_translation(msgId, "bs", bosnian_translation)
+
 
             # Save progress at every iteration
             save_progress(translations_by_key, i + 1, progress_file)
