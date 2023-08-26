@@ -12,8 +12,8 @@ class StringUtils:
 
     @staticmethod
     def convert_to_json(translation_dict):
-        translations_dict = {
+        entries_dict = {
             lang: translation for lang, translation in translation_dict.items()
         }
-        translations_json = json.dumps(translations_dict, ensure_ascii=False, indent=4)
-        return translations_json
+        entries_json = json.dumps(entries_dict, ensure_ascii=False, indent=4)
+        return entries_json
