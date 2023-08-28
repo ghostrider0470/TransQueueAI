@@ -2,26 +2,29 @@
 import glob
 import json
 import os
+from queue import Queue
 
 import polib
 
 from entries import Entries, Entry
 
 
-def save_progress(entries, index, path="progress.json"):
+def save_progress(entries, task_queue, path="progress.json"):
     with open(path, "w", encoding="utf-8") as f:
-        # entries_dict = {key: entry.to_dict() for key, entry in entries.entries.items()}
-        json.dump({"entries": entries.entries, "index": index}, f, indent=4)
-
-
+        json.dump({"entries": entries.entries, "task_queue": list(task_queue.queue)}, f, indent=4)
 
 def load_progress(path="progress.json"):
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             entries = Entries().from_dict(data['entries'])
-            return entries, data["index"]
-    return None, 0
+            task_queue = Queue()
+            for item in data.get("task_queue", []):
+                task_queue.put(item)
+            return entries, task_queue
+    return None, Queue()
+
+
 
 
 def load_po_files(input_directory):
@@ -40,7 +43,7 @@ def load_po_files(input_directory):
 
                 for entry in po_file:
                     msgid = entry.msgid
-                    lang = po_file.metadata.get("Language", "unknown")
+                    lang = po_file.metadata.get("Language", "en")
                     translation = entry.msgstr
 
                     # if msgid not in entries.entries:
@@ -70,7 +73,12 @@ def create_po_file(entries_by_key, lang,input_directory, output_directory, curre
     for key, entries in entries_by_key.get_entries():
         translation_for_lang = entries.get(lang, "")
         # entry = polib.POEntry(msgid=key, msgstr=translation_for_lang)
-        po.find(key).msgstr = translation_for_lang
+        try:
+            po.find(key).msgstr = translation_for_lang
+        except:
+            print(key)
+            entry = polib.POEntry(msgid=key, msgstr=translation_for_lang)
+
 
     output_file_path = os.path.join(output_directory, current_sub_directory, f"{lang}.po")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)

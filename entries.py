@@ -79,10 +79,11 @@ def create_context(entries):
     context = [
         {
             "role": "system",
-            "content": 'Task:\nYou are an advanced AI Translator. Analyze the text content of JSON and its different entries (German, French, and English) to understand the context and meaning. Then, provide a translation in Bosnian using Bosnian accounting terms.\n\nInput:\n\n{\n    "de": "\\n\\nDie Buchungszeile (%s) ist nicht ausgeglichen. Die Summe der Belastungen liegt bei %s und die Summe der Gutschriften liegt bei %s. \\nSie können ein Standardkonto im Journal „%s“ angeben, um jede Buchungszeile automatisch auszugleichen.",\n    "fr": "\\n\\nL\'écriture (%s) n\'est pas équilibrée.\\nLe total des débits est égal à %s et le total des crédits est égal à %s.\\nVous voudrez peut-être spécifier un compte par défaut sur le journal \\"%s\\" pour équilibrer automatiquement chaque mouvement.",\n    "en": "\\n\\nThe move (%s) is not balanced.\\nThe total of debits equals %s and the total of credits equals %s.\\nYou might want to specify a default account on journal \\"%s\\" to automatically balance each move."\n}\n\n\nOutput:\n\n{\n    "bs": "\\n\\nObračun(%s) nije uravnotežen.\\nUkupno zaduženje iznosi %s, a ukupno odobrenje iznosi %s.\\nMožda ćete htjeti odrediti zadani račun u dnevniku \\"%s\\" kako biste automatski uravnotežili svaki potez."\n}\n\n\nThe provided output is a valid translation of the given text into Bosnian, adhering to the accounting context specified in the task.',
+            "content": 'Task: Translate accounting text from DE, FR, EN to BS.\nInput: JSON with text in DE, FR, EN.\nOutput: JSON with text in BS.'
         },
         {"role": "user", "content": entries},
     ]
+
     return context
 
 
@@ -90,10 +91,10 @@ def request_translation(context):
     openai.api_key = os.getenv("OPENAI_API_KEY")
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo-16k",
         messages=context,
         temperature=1,
-        max_tokens=1000,
+        max_tokens=10000,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0,

@@ -1,54 +1,71 @@
-# main.py
 import os
-
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+from queue import Queue
+import time
 from tqdm import tqdm
-
+from files import load_progress, save_progress, load_po_files, create_po_file
+from helper import StringUtils
 import entries
 from config import Config
-from files import load_progress, load_po_files, save_progress, create_po_file
-from helper import StringUtils
 
 config = Config()
 
+lock = Lock()
+task_queue = Queue()
+
+def process_translation(translations_by_key, progress_file):
+    while not task_queue.empty():
+        msgId, translation_dict = task_queue.get()
+        retries = 3  
+        delay = 5  
+
+        for attempt in range(retries):
+            try:
+                minified_msgId = StringUtils.remove_empty_lines(msgId)
+                translations_string = StringUtils.convert_to_json(translation_dict)
+                context = entries.create_context(translations_string)
+                response = entries.request_translation(context)
+
+                with lock:
+                    bosnian_translation = response
+                    translations_by_key.add_translation(msgId, "bs", bosnian_translation)
+                    save_progress(translations_by_key, task_queue, progress_file)
+
+                break  
+            except Exception as e:
+                if "Rate limit reached" in str(e):
+                    time.sleep(delay)
+                    delay *= 2  
+                else:
+                    print(f"An error occurred while translating msgId {msgId}: {e}")
+                    break
+
+        if attempt == retries - 1:
+            task_queue.put((msgId, translation_dict))
+
+def process_directory(directory, translations_by_key, input_directory, output_directory):
+    create_po_file(translations_by_key, "bs", input_directory, output_directory, directory)
+
 if __name__ == "__main__":
     progress_file = "output/progress.json"
-    translations_by_key, start_index = load_progress(progress_file)
+    translations_by_key, task_queue = load_progress(progress_file)
 
     if translations_by_key is None:
         translations_by_key = load_po_files(config.input_directory)
+        for msgId, translation_dict in translations_by_key.get_entries():
+            task_queue.put((msgId, translation_dict))
 
-    items = list(translations_by_key.get_entries())
+    with tqdm(total=task_queue.qsize(), desc="Translating", ascii=True) as pbar:
+        with ThreadPoolExecutor() as executor:
+            executor.submit(process_translation, translations_by_key, progress_file)
 
-    with tqdm(total=len(translations_by_key), desc="Translating", ascii=True) as pbar:
-        # Set the progress bar to the starting index
-        pbar.n = start_index
-        pbar.last_print_n = start_index
-        pbar.refresh()
+        pbar.update(task_queue.qsize())
 
-        for i, (msgId, translation_dict) in enumerate(
-            items[start_index:], start=start_index
-        ):
-            minified_msgId = StringUtils.remove_empty_lines(msgId)
-
-            translations_string = StringUtils.convert_to_json(translation_dict)
-
-            context = entries.create_context(translations_string)
-            response = entries.request_translation(context)
-
-            # Extracting Bosnian translation and updating translations_by_key
-            bosnian_translation = response
-            translations_by_key.add_translation(msgId, "bs", bosnian_translation)
-
-
-            # Save progress at every iteration
-            save_progress(translations_by_key, i + 1, progress_file)
-            pbar.update(1)
-
-    # Creating .po file for Bosnian translations
     output_directory = os.path.join(config.app_root_directory, "output")
+    directories = []
     for root, dirs, _ in os.walk(config.input_directory):
-        for directory in dirs:
+        directories.extend(dirs)
 
-            create_po_file(translations_by_key, "bs", config.input_directory, output_directory, directory)
-
-
+    with ThreadPoolExecutor() as executor:
+        executor.map(process_directory, directories, [translations_by_key]*len(directories), [config.input_directory]*len(directories), [output_directory]*len(directories))
