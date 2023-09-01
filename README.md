@@ -1,45 +1,31 @@
+# TransQueueAI
 
-# Translation Queue System
+## Description
+TransQueueAI is a Python-based automated translation queue system that leverages OpenAI's GPT-3.5 Turbo model. This system is designed to handle large-scale text translation tasks, ensuring efficient operation and fault tolerance. 
 
-## Overview
+## Features
+- **Parallelized Translation**: Takes advantage of Python's threading capabilities to speed up the translation process.
+- **Rate-Limit Handling**: Automatically retries translation tasks when API rate limits are reached.
+- **Progress Tracking**: Keeps track of the translation progress and resumes from where it left off.
+- **Queue Persistence**: Stores the task queue in a JSON file so the program can be safely stopped and resumed.
 
-This system is designed to automate the process of translating text using OpenAI's GPT-3.5 Turbo. The system reads `.po` files, sends the text for translation, and then writes the translated text back to `.po` files.
+## Installation
+1. Clone this repository to your local machine.
+2. Install the required Python packages using `pip install -r requirements.txt`.
+3. Rename `.env.example` to `.env` and update it with your OpenAI API Key and other configurations.
 
-## Files
+## Usage
+1. Add your `.po` files in the `input` directory.
+2. Run `main.py` to start the translation process.
 
-### config.py
+## How it Works
+- The translation tasks are placed in a queue.
+- Multiple threads pick tasks from the queue and send them to the OpenAI GPT-3.5 Turbo model for translation.
+- The translated text is then stored and the queue is updated.
+- All progress is saved in a `progress.json` file.
 
-- Contains the configuration settings for the application.
-- Loads environment variables.
+## Contributing
+We welcome contributions! Please see the `CONTRIBUTING.md` for details.
 
-### entries.py
-
-- Defines `Entry` and `Entries` classes.
-- Handles the text entries and their translations.
-
-### files.py
-
-- Contains functions for handling file operations.
-- Reads `.po` files and writes translated entries to them.
-
-### helper.py
-
-- Provides utility functions for string and JSON manipulation.
-
-### main.py
-
-- Orchestrates the entire translation flow.
-- Uses multithreading for efficient processing.
-
-## How To Run
-
-1. Make sure you have all the required environment variables set.
-2. Run `main.py`.
-
-## Changelog
-
-- Implemented task queue for handling translation tasks.
-- The progress is now stored in `progress.json`.
-- Improved error-handling mechanisms.
-- Fully commented the source code for better readability.
-
+## License
+This project is licensed under the MIT License - see the `LICENSE.md` file for details.
