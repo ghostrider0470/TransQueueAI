@@ -11,7 +11,9 @@ from entries import Entries, Entry
 
 def save_progress(entries, task_queue, path="progress.json"):
     with open(path, "w", encoding="utf-8") as f:
-        json.dump({"entries": entries.entries, "task_queue": list(task_queue.queue)}, f, indent=4)
+        queue_list = list(task_queue.queue)
+        json.dump({"entries": entries.entries, "task_queue": queue_list}, f, indent=4)
+
 
 def load_progress(path="progress.json"):
     if os.path.exists(path):

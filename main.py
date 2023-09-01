@@ -14,11 +14,11 @@ config = Config()
 lock = Lock()
 task_queue = Queue()
 
-def process_translation(translations_by_key, progress_file):
+def process_translation(translations_by_key, progress_file, pbar):
     while not task_queue.empty():
         msgId, translation_dict = task_queue.get()
-        retries = 3  
-        delay = 5  
+        retries = 50
+        delay = 5
 
         for attempt in range(retries):
             try:
@@ -27,16 +27,16 @@ def process_translation(translations_by_key, progress_file):
                 context = entries.create_context(translations_string)
                 response = entries.request_translation(context)
 
-                with lock:
-                    bosnian_translation = response
-                    translations_by_key.add_translation(msgId, "bs", bosnian_translation)
-                    save_progress(translations_by_key, task_queue, progress_file)
+                bosnian_translation = response
+                translations_by_key.add_translation(msgId, "bs", bosnian_translation)
 
-                break  
+                save_progress(translations_by_key, task_queue, progress_file)
+                pbar.update(1)
+                break
             except Exception as e:
                 if "Rate limit reached" in str(e):
                     time.sleep(delay)
-                    delay *= 2  
+                    delay *= 2
                 else:
                     print(f"An error occurred while translating msgId {msgId}: {e}")
                     break
@@ -58,9 +58,7 @@ if __name__ == "__main__":
 
     with tqdm(total=task_queue.qsize(), desc="Translating", ascii=True) as pbar:
         with ThreadPoolExecutor() as executor:
-            executor.submit(process_translation, translations_by_key, progress_file)
-
-        pbar.update(task_queue.qsize())
+            executor.submit(process_translation, translations_by_key, progress_file, pbar)
 
     output_directory = os.path.join(config.app_root_directory, "output")
     directories = []
